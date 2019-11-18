@@ -147,13 +147,13 @@ class MinimaxAgent(MultiAgentSearchAgent):
             moves = state.getLegalActions(agentIndex)
             if len(moves) == 0:
               return self.evaluationFunction(state)
-            next = [minimaxSearch(state=state.generateSuccessor(agentIndex, move), agentIndex=(agentIndex +1), depth=depth) for move in moves]
+            next = [minimaxSearch(state.generateSuccessor(agentIndex, move), (agentIndex +1), depth) for move in moves]
             if(agentIndex == 0):
               return max(next)
             else:
               return min(next)
         
-        return max(gameState.getLegalActions(0), key=lambda x: minimaxSearch(state=gameState.generateSuccessor(0, x), agentIndex=1, depth=1))
+        return max(gameState.getLegalActions(0), key=lambda action: minimaxSearch(gameState.generateSuccessor(0, action), 1, 1))
 
       
 class AlphaBetaAgent(MultiAgentSearchAgent):
@@ -166,7 +166,58 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
           Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        return util.raiseNotDefined()
+        def alphabeta(state):
+          currentNode, bestAction, a, b  = None, None, None, None
+          for action in state.getLegalActions(0):
+            currentNode = max(currentNode, nodeMin(state.generateSuccessor(0, action), 1, 1, a, b))
+            if a is None:
+              a = currentNode
+              bestAction = action
+            else:
+              a, bestAction = max(currentNode, a), action if currentNode > a else bestAction
+          return bestAction
+        
+        def nodeMax(state, agentIndex, depth, a, b):
+            if depth > self.depth:
+              return self.evaluationFunction(state)
+            temp_a = -9999999
+            for action in state.getLegalActions(agentIndex):
+              currentNode = nodeMin(state.generateSuccessor(agentIndex, action), agentIndex + 1, depth, a, b)
+              temp_a = max(temp_a, currentNode)
+              # tren node Max la node Min
+              # Node min se update gia tri b
+              # Neu a < b thi return luon a cat nhanh con lai
+              if b is not None and temp_a > b:
+                return temp_a
+              # Cap nhat gia tri max a
+              a = max(a, temp_a)
+
+            if temp_a != -9999999:
+              return temp_a
+            else:
+              return self.evaluationFunction(state)
+            
+        def nodeMin(state, agentIndex, depth, a, b):
+          if agentIndex == state.getNumAgents():
+            return nodeMax(state, 0, depth + 1, a, b)
+          temp_b = None
+          for action in state.getLegalActions(agentIndex):
+            currentNode = nodeMin(state.generateSuccessor(agentIndex, action), agentIndex + 1, depth, a, b)
+            if temp_b is None: temp_b = currentNode
+            else: temp_b = min(currentNode, temp_b)
+
+            if a is not None and temp_b < a:
+              return temp_b
+            
+            if b is None: b = temp_b
+            else: b = min(temp_b, b)
+
+          if temp_b is not None:
+            return temp_b
+          else:
+            return self.evaluationFunction(state)
+          
+        return alphabeta(gameState)
        
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
@@ -193,14 +244,14 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
             moves = state.getLegalActions(agentIndex)
             if len(moves) == 0:
               return self.evaluationFunction(state)
-            next = [expectimaxSearch(state=state.generateSuccessor(agentIndex, move), agentIndex=(agentIndex +1), depth=depth) for move in moves]
+            next = [expectimaxSearch(state.generateSuccessor(agentIndex, move), (agentIndex +1), depth) for move in moves]
             if(agentIndex == 0):
               return max(next)
             else:
               # Tinh trung binh
               return sum(next) / len(next)
 
-        result = max(gameState.getLegalActions(0), key=lambda x: expectimaxSearch(gameState.generateSuccessor(0, x), 1, 1))
+        result = max(gameState.getLegalActions(0), key=lambda action: expectimaxSearch(gameState.generateSuccessor(0, action), 1, 1))
 
         return result
 
